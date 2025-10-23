@@ -28,25 +28,18 @@ const DataSchema = new mongoose.Schema(
 
 const Data = mongoose.models.Data || mongoose.model('Data', DataSchema);
 
-// Connect to MongoDB with sane defaults for server environments
-async function connectDB() {
-  if (!MONGODB_URI) {
-    throw new Error('MONGODB_URI is not set');
+// Simple MongoDB connection
+const connectDB = async () => {
+  try {
+    await mongoose.connect(MONGODB_URI);
+    console.log('MongoDB connected successfully');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    process.exit(1);
   }
-  if (mongoose.connection.readyState === 1) return;
-  await mongoose.connect(MONGODB_URI, {
-    bufferCommands: false,
-    maxPoolSize: 10,
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
-  } as any);
-}
+};
 
-// Connect to database once at startup
-connectDB().catch((err) => {
-  console.error('Failed to connect to MongoDB:', err);
-  process.exit(1);
-});
+connectDB();
 
 // Health check
 app.get('/health', async (_req: Request, res: Response) => {
