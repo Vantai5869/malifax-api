@@ -43,7 +43,10 @@ async function connectDB() {
 }
 
 // Connect to database once at startup
-connectDB().catch(console.error);
+connectDB().catch((err) => {
+  console.error('Failed to connect to MongoDB:', err);
+  process.exit(1);
+});
 
 // Health check
 app.get('/health', async (_req: Request, res: Response) => {
@@ -62,7 +65,11 @@ app.get('/api/partners', async (_req: Request, res: Response) => {
       res.json({ partners: [] });
     }
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch partners' });
+    console.error('Error fetching partners:', err);
+    res.status(500).json({ 
+      error: 'Failed to fetch partners',
+      details: process.env.NODE_ENV === 'development' ? (err instanceof Error ? err.message : String(err)) : 'Database connection failed'
+    });
   }
 });
 
