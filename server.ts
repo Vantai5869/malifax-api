@@ -231,6 +231,7 @@ app.delete('/api/shop-products', async (_req: Request, res: Response) => {
 
 // Reset shop products to default data
 app.post('/api/shop-products/reset', async (_req: Request, res: Response) => {
+    console.log('Resetting shop products to default data');
   try {
     
     const defaultShopProducts = [
