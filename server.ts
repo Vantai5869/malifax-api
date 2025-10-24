@@ -232,7 +232,7 @@ app.delete('/api/shop-products', async (_req: Request, res: Response) => {
 // Reset shop products to default data
 app.post('/api/shop-products/reset', async (_req: Request, res: Response) => {
   try {
-    
+    console.log('Resetting shop products to default data');
     const defaultShopProducts = [
       { "id": 1, "title": "Blackpanda", "description": "Blackpanda is Asia's leading local cyber incident response firm, dedicated to delivering world-class digital emergency response services to businesses in the region.", "logo": "/svgs/panda48_48.svg", "logoAlt": "Blackpanda Logo", "order_index": 1 },
       { "id": 2, "title": "Lenovo", "description": "Lenovo is a global technology company that designs, develops, manufactures and markets innovative consumer and enterprise technology products and services.", "logo": "/svgs/lenovo.svg", "logoAlt": "Lenovo Logo", "order_index": 2 },
