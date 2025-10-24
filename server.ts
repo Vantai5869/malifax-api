@@ -150,10 +150,10 @@ app.post('/api/partners/reset', async (_req: Request, res: Response) => {
         { "name": "Zscaler", "logo_src": "/imgs/logo-mf/zscaler-logo 1.png", "website_url": "https://www.zscaler.com/", "alt_text": "Zscaler", "order_index": 33 }
       ],
       "shopProducts": [
-        { "id": 1, "title": "Blackpanda", "description": "Blackpanda is Asia's leading local cyber incident response firm, dedicated to delivering world-class digital emergency response services to businesses in the region.", "logo_src": "/svgs/panda48_48.svg", "logoAlt": "Blackpanda Logo", "order_index": 1 },
-        { "id": 2, "title": "Lenovo", "description": "Lenovo is a global technology company that designs, develops, manufactures and markets innovative consumer and enterprise technology products and services.", "logo_src": "/svgs/lenovo.svg", "logoAlt": "Lenovo Logo", "order_index": 2 },
-        { "id": 3, "title": "Aruba instant on", "description": "Aruba Instant On delivers enterprise-grade WiFi that's simple to set up and manage, perfect for small businesses and remote work environments.", "logo_src": "/svgs/arubar48_48.svg", "logoAlt": "Aruba Logo", "order_index": 3 },
-        { "id": 4, "title": "Ubiquiti", "description": "UniFi is rethinking IT with industry-leading products for enterprise networking, security, and more unified in an incredible software interface", "logo_src": "/svgs/Ubiquiti.svg", "logoAlt": "Ubiquiti Logo", "order_index": 4 }
+        { "id": 1, "title": "Blackpanda", "description": "Blackpanda is Asia's leading local cyber incident response firm, dedicated to delivering world-class digital emergency response services to businesses in the region.", "logo_src": "/svgs/panda48_48.svg", "logoAlt": "Blackpanda Logo", "website_url": "https://www.blackpanda.com/", "order_index": 1 },
+        { "id": 2, "title": "Lenovo", "description": "Lenovo is a global technology company that designs, develops, manufactures and markets innovative consumer and enterprise technology products and services.", "logo_src": "/svgs/lenovo.svg", "logoAlt": "Lenovo Logo", "website_url": "https://www.lenovo.com/", "order_index": 2 },
+        { "id": 3, "title": "Aruba instant on", "description": "Aruba Instant On delivers enterprise-grade WiFi that's simple to set up and manage, perfect for small businesses and remote work environments.", "logo_src": "/svgs/arubar48_48.svg", "logoAlt": "Aruba Logo", "website_url": "https://arubanetworking.hpe.com/", "order_index": 3 },
+        { "id": 4, "title": "Ubiquiti", "description": "UniFi is rethinking IT with industry-leading products for enterprise networking, security, and more unified in an incredible software interface", "logo_src": "/svgs/Ubiquiti.svg", "logoAlt": "Ubiquiti Logo", "website_url": "https://ui.com/", "order_index": 4 }
       ]
     };
     
@@ -234,10 +234,10 @@ app.delete('/api/shop-products', async (_req: Request, res: Response) => {
 app.post('/api/shop-products/reset', async (_req: Request, res: Response) => {
   try {
     const defaultShopProducts = [
-      { "id": 1, "title": "Blackpanda", "description": "Blackpanda is Asia's leading local cyber incident response firm, dedicated to delivering world-class digital emergency response services to businesses in the region.", "logo_src": "/svgs/panda48_48.svg", "logoAlt": "Blackpanda Logo", "order_index": 1 },
-      { "id": 2, "title": "Lenovo", "description": "Lenovo is a global technology company that designs, develops, manufactures and markets innovative consumer and enterprise technology products and services.", "logo_src": "/svgs/lenovo.svg", "logoAlt": "Lenovo Logo", "order_index": 2 },
-      { "id": 3, "title": "Aruba instant on", "description": "Aruba Instant On delivers enterprise-grade WiFi that's simple to set up and manage, perfect for small businesses and remote work environments.", "logo_src": "/svgs/arubar48_48.svg", "logoAlt": "Aruba Logo", "order_index": 3 },
-      { "id": 4, "title": "Ubiquiti", "description": "UniFi is rethinking IT with industry-leading products for enterprise networking, security, and more unified in an incredible software interface", "logo_src": "/svgs/Ubiquiti.svg", "logoAlt": "Ubiquiti Logo", "order_index": 4 }
+      { "id": 1, "title": "Blackpanda", "description": "Blackpanda is Asia's leading local cyber incident response firm, dedicated to delivering world-class digital emergency response services to businesses in the region.", "logo_src": "/svgs/panda48_48.svg", "logoAlt": "Blackpanda Logo", "website_url": "https://www.blackpanda.com/", "order_index": 1 },
+      { "id": 2, "title": "Lenovo", "description": "Lenovo is a global technology company that designs, develops, manufactures and markets innovative consumer and enterprise technology products and services.", "logo_src": "/svgs/lenovo.svg", "logoAlt": "Lenovo Logo", "website_url": "https://www.lenovo.com/", "order_index": 2 },
+      { "id": 3, "title": "Aruba instant on", "description": "Aruba Instant On delivers enterprise-grade WiFi that's simple to set up and manage, perfect for small businesses and remote work environments.", "logo_src": "/svgs/arubar48_48.svg", "logoAlt": "Aruba Logo", "website_url": "https://arubanetworking.hpe.com/", "order_index": 3 },
+      { "id": 4, "title": "Ubiquiti", "description": "UniFi is rethinking IT with industry-leading products for enterprise networking, security, and more unified in an incredible software interface", "logo_src": "/svgs/Ubiquiti.svg", "logoAlt": "Ubiquiti Logo", "website_url": "https://ui.com/", "order_index": 4 }
     ];
     
     // Update shop products data
