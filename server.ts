@@ -205,16 +205,18 @@ app.post('/api/shop-products', async (req: Request, res: Response) => {
 
 app.put('/api/shop-products', async (req: Request, res: Response) => {
   try {
-    const { shopProducts } = req.body || {};
-    if (!Array.isArray(shopProducts)) {
-      return res.status(400).json({ error: 'shopProducts must be an array' });
+    const { shopProducts, products } = req.body || {};
+    const dataToUpdate = shopProducts || products;
+    
+    if (!Array.isArray(dataToUpdate)) {
+      return res.status(400).json({ error: 'shopProducts or products must be an array' });
     }
     await Data.findOneAndUpdate(
       { key: 'shop-products' },
-      { key: 'shop-products', data: JSON.stringify(shopProducts) },
+      { key: 'shop-products', data: JSON.stringify(dataToUpdate) },
       { upsert: true, new: true }
     );
-    res.json({ shopProducts });
+    res.json({ shopProducts: dataToUpdate });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update shop products' });
   }
