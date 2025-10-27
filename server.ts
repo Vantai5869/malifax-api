@@ -1,14 +1,17 @@
 import 'dotenv/config';
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
 import mongoose from 'mongoose';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI as string;
+const JWT_SECRET = process.env.JWT_SECRET || 'malifax-admin-secret-key-2024';
 
 // Basic middleware
 app.use(helmet());
@@ -29,6 +32,18 @@ const DataSchema = new mongoose.Schema(
 
 const Data = mongoose.models.Data || mongoose.model('Data', DataSchema);
 
+// Admin User Schema
+const AdminUserSchema = new mongoose.Schema(
+  {
+    username: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    role: { type: String, default: 'admin' },
+  },
+  { timestamps: true }
+);
+
+const AdminUser = mongoose.models.AdminUser || mongoose.model('AdminUser', AdminUserSchema);
+
 // Simple MongoDB connection
 const connectDB = async () => {
   try {
@@ -42,9 +57,125 @@ const connectDB = async () => {
 
 connectDB();
 
+// Middleware to verify JWT token
+const verifyToken = (req: Request, res: Response, next: NextFunction) => {
+  const token = req.headers.authorization?.replace('Bearer ', '') || req.headers['x-access-token'] as string;
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access denied. No token provided.' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    (req as any).user = decoded;
+    next();
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid or expired token.' });
+  }
+};
+
+// Initialize default admin user
+const initializeAdmin = async () => {
+  try {
+    const adminExists = await AdminUser.findOne({ username: 'admin' });
+    if (!adminExists) {
+      const hashedPassword = await bcrypt.hash('admin@123', 10);
+      await AdminUser.create({
+        username: 'admin',
+        password: hashedPassword,
+        role: 'admin',
+      });
+      console.log('Default admin user created (username: admin, password: admin@123)');
+    }
+  } catch (error) {
+    console.error('Error initializing admin:', error);
+  }
+};
+
+// Call after DB connection
+setTimeout(initializeAdmin, 2000);
+
 // Health check
 app.get('/health', async (_req: Request, res: Response) => {
   res.status(200).json({ ok: true });
+});
+
+// Auth routes
+app.post('/api/admin/login', async (req: Request, res: Response) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    const user = await AdminUser.findOne({ username });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+      { userId: user._id, username: user.username, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        role: user.role,
+      },
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// Change password endpoint (protected)
+app.post('/api/admin/change-password', verifyToken, async (req: Request, res: Response) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = (req as any).user.userId;
+
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ error: 'New password must be at least 6 characters' });
+    }
+
+    const user = await AdminUser.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedNewPassword;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (err) {
+    console.error('Change password error:', err);
+    res.status(500).json({ error: 'Failed to change password' });
+  }
 });
 
 // Routes: mirror Next.js API semantics
@@ -67,8 +198,8 @@ app.get('/api/partners', async (_req: Request, res: Response) => {
   }
 });
 
-// POST: insert one item (string or arbitrary JSON serialized)
-app.post('/api/partners', async (req: Request, res: Response) => {
+// POST: insert one item (string or arbitrary JSON serialized) (protected)
+app.post('/api/partners', verifyToken, async (req: Request, res: Response) => {
   try {
     const payload = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
     await Data.findOneAndUpdate(
@@ -82,8 +213,8 @@ app.post('/api/partners', async (req: Request, res: Response) => {
   }
 });
 
-// PUT: bulk replace entire list (array of strings)
-app.put('/api/partners', async (req: Request, res: Response) => {
+// PUT: bulk replace entire list (array of strings) (protected)
+app.put('/api/partners', verifyToken, async (req: Request, res: Response) => {
   try {
     const { partners } = req.body || {};
     if (!Array.isArray(partners)) {
@@ -100,8 +231,8 @@ app.put('/api/partners', async (req: Request, res: Response) => {
   }
 });
 
-// DELETE: reset (delete all)
-app.delete('/api/partners', async (_req: Request, res: Response) => {
+// DELETE: reset (delete all) (protected)
+app.delete('/api/partners', verifyToken, async (_req: Request, res: Response) => {
   try {
     const result = await Data.deleteOne({ key: 'partners' });
     res.json({ deleted: result.deletedCount || 0 });
@@ -110,8 +241,8 @@ app.delete('/api/partners', async (_req: Request, res: Response) => {
   }
 });
 
-// POST: reset to default data
-app.post('/api/partners/reset', async (_req: Request, res: Response) => {
+// POST: reset to default data (protected)
+app.post('/api/partners/reset', verifyToken, async (_req: Request, res: Response) => {
   try {
     
     const defaultData = {
@@ -190,7 +321,7 @@ app.get('/api/shop-products', async (_req: Request, res: Response) => {
   }
 });
 
-app.post('/api/shop-products', async (req: Request, res: Response) => {
+app.post('/api/shop-products', verifyToken, async (req: Request, res: Response) => {
   try {
     const payload = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
     await Data.findOneAndUpdate(
@@ -204,7 +335,7 @@ app.post('/api/shop-products', async (req: Request, res: Response) => {
   }
 });
 
-app.put('/api/shop-products', async (req: Request, res: Response) => {
+app.put('/api/shop-products', verifyToken, async (req: Request, res: Response) => {
   try {
     const { shopProducts } = req.body || {};
     
@@ -222,7 +353,7 @@ app.put('/api/shop-products', async (req: Request, res: Response) => {
   }
 });
 
-app.delete('/api/shop-products', async (_req: Request, res: Response) => {
+app.delete('/api/shop-products', verifyToken, async (_req: Request, res: Response) => {
   try {
     const result = await Data.deleteOne({ key: 'shop-products' });
     res.json({ deleted: result.deletedCount || 0 });
@@ -231,8 +362,8 @@ app.delete('/api/shop-products', async (_req: Request, res: Response) => {
   }
 });
 
-// Reset shop products to default data
-app.post('/api/shop-products/reset', async (_req: Request, res: Response) => {
+// Reset shop products to default data (protected)
+app.post('/api/shop-products/reset', verifyToken, async (_req: Request, res: Response) => {
   try {
     const defaultShopProducts = [
       { "id": 1, "title": "Blackpanda", "description": "Blackpanda is Asia's leading local cyber incident response firm, dedicated to delivering world-class digital emergency response services to businesses in the region.", "logo_src": "/svgs/panda48_48.svg", "logoAlt": "Blackpanda Logo", "website_url": "https://www.blackpanda.com/", "order_index": 1 },
@@ -284,8 +415,8 @@ app.get('/api/logo-grids', async (req: Request, res: Response) => {
   }
 });
 
-// PUT: update or create new data by pageKey
-app.put('/api/logo-grids', async (req: Request, res: Response) => {
+// PUT: update or create new data by pageKey (protected)
+app.put('/api/logo-grids', verifyToken, async (req: Request, res: Response) => {
   try {
     const { pageKey } = req.body;
     
@@ -306,8 +437,8 @@ app.put('/api/logo-grids', async (req: Request, res: Response) => {
   }
 });
 
-// POST: reset to default data
-app.post('/api/logo-grids/reset', async (_req: Request, res: Response) => {
+// POST: reset to default data (protected)
+app.post('/api/logo-grids/reset', verifyToken, async (_req: Request, res: Response) => {
   try {
     const defaultLogoGrids = [
       {
