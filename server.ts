@@ -15,7 +15,8 @@ app.use(helmet());
 app.use(cors());
 app.use(compression());
 app.use(morgan('combined'));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Single collection schema storing string data with key
 const DataSchema = new mongoose.Schema(
@@ -254,6 +255,140 @@ app.post('/api/shop-products/reset', async (_req: Request, res: Response) => {
     });
   } catch (err) {
     res.status(500).json({ error: 'Failed to reset shop products' });
+  }
+});
+
+// Logo Grids API - Generic key-value storage for arrays
+// GET: retrieve data by pageKey
+app.get('/api/logo-grids', async (req: Request, res: Response) => {
+  try {
+    const { pageKey } = req.query;
+    
+    if (!pageKey || typeof pageKey !== 'string') {
+      return res.status(400).json({ error: 'pageKey parameter is required' });
+    }
+    
+    const doc = await Data.findOne({ key: pageKey });
+    if (doc) {
+      const data = JSON.parse(doc.data);
+      res.json(data);
+    } else {
+      res.json({ pageKey, desktopLayout: [], totalSlots: 36 });
+    }
+  } catch (err) {
+    console.error('Error fetching logo grids:', err);
+    res.status(500).json({ 
+      error: 'Failed to fetch logo grids',
+      details: process.env.NODE_ENV === 'development' ? (err instanceof Error ? err.message : String(err)) : 'Database connection failed'
+    });
+  }
+});
+
+// PUT: update or create new data by pageKey
+app.put('/api/logo-grids', async (req: Request, res: Response) => {
+  try {
+    const { pageKey } = req.body;
+    
+    if (!pageKey || typeof pageKey !== 'string') {
+      return res.status(400).json({ error: 'pageKey is required and must be a string' });
+    }
+    
+    await Data.findOneAndUpdate(
+      { key: pageKey },
+      { key: pageKey, data: JSON.stringify(req.body) },
+      { upsert: true, new: true }
+    );
+    
+    res.json(req.body);
+  } catch (err) {
+    console.error('Error updating logo grids:', err);
+    res.status(500).json({ error: 'Failed to update logo grids' });
+  }
+});
+
+// POST: reset to default data
+app.post('/api/logo-grids/reset', async (_req: Request, res: Response) => {
+  try {
+    const defaultLogoGrids = [
+      {
+        pageKey: 'business-continuity',
+        pageName: 'Business Continuity',
+        desktopLayout: [
+          { position: 3, src: '/svgs/solution/business-i1.svg', alt: 'Logo 1', size: 1, website_url: 'https://business1.com' },
+          { position: 8, src: '/svgs/solution/business-i2.svg', alt: 'Logo 2', size: 2, website_url: 'https://business2.com' },
+          { position: 13, src: '/svgs/solution/business-i3.svg', alt: 'Logo 3', size: 1, website_url: 'https://business3.com' },
+          { position: 18, src: '/svgs/solution/business-i4.svg', alt: 'Logo 4', size: 2, website_url: 'https://business4.com' },
+          { position: 23, src: '/svgs/solution/business-i5.svg', alt: 'Logo 5', size: 1, website_url: 'https://business5.com' },
+          { position: 26, src: '/svgs/solution/business-i6.svg', alt: 'Logo 6', size: 2, website_url: 'https://business6.com' },
+          { position: 29, src: '/svgs/solution/business-i7.svg', alt: 'Logo 7', size: 1, website_url: 'https://business7.com' },
+          { position: 33, src: '/svgs/solution/business-i8.svg', alt: 'Logo 8', size: 2, website_url: 'https://business8.com' },
+        ],
+        totalSlots: 36
+      },
+      {
+        pageKey: 'cctv-door-access',
+        pageName: 'CCTV Door Access',
+        desktopLayout: [
+          { position: 3, src: '/svgs/solution/cctv-i1.svg', alt: 'Logo 1', size: 1, website_url: 'https://cctv1.com' },
+          { position: 8, src: '/svgs/solution/cctv-i2.svg', alt: 'Logo 2', size: 2, website_url: 'https://cctv2.com' },
+          { position: 17, src: '/svgs/solution/cctv-i3.svg', alt: 'Logo 3', size: 2, website_url: 'https://cctv3.com' },
+        ],
+        totalSlots: 24
+      },
+      {
+        pageKey: 'equipment-rental',
+        pageName: 'Equipment Rental',
+        desktopLayout: [
+          { position: 3, src: '/svgs/solution/rental-i1.svg', alt: 'Logo 1', size: 1, website_url: 'https://rental1.com' },
+          { position: 10, src: '/svgs/solution/rental-i2.svg', alt: 'Logo 2', size: 1, website_url: 'https://rental2.com' },
+          { position: 16, src: '/svgs/solution/rental-i3.svg', alt: 'Logo 3', size: 1, website_url: 'https://rental3.com' },
+          { position: 32, src: '/svgs/solution/rental-i4.svg', alt: 'Logo 4', size: 1, website_url: 'https://rental4.com' },
+        ],
+        totalSlots: 36
+      },
+      {
+        pageKey: 'enterprise-cloud',
+        pageName: 'Enterprise Cloud',
+        desktopLayout: [
+          { position: 3, src: '/svgs/solution/cloud-i1.svg', alt: 'Logo 1', size: 1, website_url: 'https://cloud1.com' },
+          { position: 8, src: '/svgs/solution/cloud-i2.svg', alt: 'Logo 2', size: 2, website_url: 'https://cloud2.com' },
+          { position: 15, src: '/svgs/solution/cloud-i3.svg', alt: 'Logo 3', size: 1, website_url: 'https://cloud3.com' },
+        ],
+        totalSlots: 27
+      },
+      {
+        pageKey: 'networking-wifi',
+        pageName: 'Networking WiFi',
+        desktopLayout: [
+          { position: 3, src: '/svgs/solution/networking-i1.svg', alt: 'Logo 1', size: 1 },
+          { position: 8, src: '/svgs/solution/networking-i2.svg', alt: 'Logo 2', size: 2 },
+          { position: 15, src: '/svgs/solution/networking-i3.svg', alt: 'Logo 3', size: 1 },
+          { position: 20, src: '/svgs/solution/networking-i4.svg', alt: 'Logo 4', size: 2 },
+          { position: 25, src: '/svgs/solution/networking-i5.svg', alt: 'Logo 5', size: 1 },
+          { position: 30, src: '/svgs/solution/networking-i6.svg', alt: 'Logo 6', size: 2 },
+          { position: 35, src: '/svgs/solution/networking-i7.svg', alt: 'Logo 7', size: 2 },
+        ],
+        totalSlots: 36
+      }
+    ];
+    
+    // Update each page data
+    for (const page of defaultLogoGrids) {
+      await Data.findOneAndUpdate(
+        { key: page.pageKey },
+        { key: page.pageKey, data: JSON.stringify(page) },
+        { upsert: true, new: true }
+      );
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Logo grids reset to default data',
+      data: defaultLogoGrids
+    });
+  } catch (err) {
+    console.error('Error resetting logo grids:', err);
+    res.status(500).json({ error: 'Failed to reset logo grids' });
   }
 });
 
